@@ -1,0 +1,7 @@
+.campaign-app { scrollbar-gutter: stable; }
+.cp-head { position:sticky;top:-18px;z-index:6;margin:-18px -18px 0;padding:16px 18px 13px;background:#08151ef2;backdrop-filter:blur(9px);box-shadow:0 8px 24px #02080d99; }
+.cp-bottleneck { display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:center;margin:10px 0 2px;padding:10px 12px;border:1px solid #406273;border-left:4px solid #e0ad68;background:#172a38;color:#c7d7db; }
+.cp-bottleneck b { color:#efbd7b; }
+.cp-actions button,.cp-scan-buttons button { min-height:54px;text-align:left; }
+.cp-vein>div { min-width:0; }
+@media(max-width:700px){.cp-head{position:relative;top:auto}.cp-bottleneck{grid-template-columns:1fr}.cp-resources{grid-template-columns:repeat(2,1fr)}.cp-scan{grid-template-columns:1fr auto}.cp-scan progress{grid-column:1/-1}.cp-vein{grid-template-columns:1fr 1fr}.cp-vein>div{grid-column:1/-1}}
