@@ -17,7 +17,7 @@ $('#floatingLayer').innerHTML='';
 const parking=document.createElement('div');parking.id='paneParking';parking.hidden=true;document.body.append(parking);
 const preview=document.createElement('div');preview.id='dockPreview';preview.hidden=true;preview.innerHTML='<span></span>';document.body.append(preview);
 const hint=document.createElement('div');hint.id='dragHint';hint.hidden=true;hint.textContent='가장자리: 분할 도킹 · 탭 영역: 탭 합치기 · 빈 곳: 독립 창';document.body.append(hint);
-document.querySelector('.version b').textContent='02';
+document.querySelector('.version b').textContent='29';
 const selectPreset=document.createElement('select');selectPreset.id='preset';selectPreset.setAttribute('aria-label','기본 배치 선택');
 ['기본','필수','자원','전투','교역','연구','계획','해역'].forEach(name=>selectPreset.add(new Option(name,name)));document.querySelector('header nav').prepend(selectPreset);
 const layoutLabel=document.createElement('span');layoutLabel.className='layout-name';layoutLabel.textContent='배치';selectPreset.before(layoutLabel);
