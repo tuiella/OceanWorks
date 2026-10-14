@@ -5,8 +5,8 @@ let serial=0;const id=prefix=>prefix+'-'+(++serial);
 const TYPES={
  coordinate:{name:'좌표',color:'#c6b477'},resource:{name:'자원 노드',color:'#b9a879'},network:{name:'네트워크',color:'#83b9a5'},facility:{name:'시설',color:'#b391bc'},calc:{name:'계산',color:'#88aaca'},plan:{name:'계획',color:'#c0ad76'},fleet:{name:'함대',color:'#88aab8'}
 };
-const RESOURCES={iron:{name:'철광층',rate:60,purity:.5},copper:{name:'구리광층',rate:50,purity:.8},gas:{name:'가스 분출구',rate:30,purity:.65},quartz:{name:'석영 광층',rate:35,purity:.72}};
-const SHIPS={guard:{name:'경비정',power:12,stock:12},cruiser:{name:'순양함',power:65,stock:4},cargo:{name:'수송선',power:2,stock:8},survey:{name:'탐사선',power:1,stock:3},miner:{name:'채굴모함',power:4,stock:2},support:{name:'지원선',power:3,stock:2}};
+const RESOURCES={iron:{name:'철 광맥',rate:60,purity:.5},copper:{name:'구리 광맥',rate:50,purity:.8},gas:{name:'가스 분출구',rate:30,purity:.65},quartz:{name:'석영 광맥',rate:35,purity:.72}};
+const SHIPS={guard:{name:'경비정',power:12,stock:12},cruiser:{name:'순양함',power:65,stock:4},cargo:{name:'수송선',power:2,stock:8},survey:{name:'탐사선',power:1,stock:3},miner:{name:'채굴선',power:4,stock:2},support:{name:'지원선',power:3,stock:2}};
 const port=(kind)=>({id:id('port'),kind});
 const num=(v,fallback=0)=>Number.isFinite(Number(v))?Math.max(0,Number(v)):fallback;
 function createNode(type,x,y,subtype){
