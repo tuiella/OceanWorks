@@ -286,5 +286,5 @@ pane.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)retur
 setInterval(()=>{if(state.paused)return;let changed=false;for(const j of jobs)if(j.status==='running'){advance(j,j.speed);changed=true;}if(changed){save();if(pane.getBoundingClientRect().width)render();}},1000);
 document.addEventListener('workspace-render',()=>{if(pane.getBoundingClientRect().width)render();});
 
-window.ScanUI={enqueue,render,get jobs(){return jobs;},advance};render();document.querySelector('.version b').textContent='28';
+window.ScanUI={enqueue,render,get jobs(){return jobs;},advance};render();Workspace.refreshPicker?.();document.querySelector('.version b').textContent='30';
 })();

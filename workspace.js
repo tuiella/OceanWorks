@@ -1,6 +1,7 @@
 'use strict';
 /* Docking uses one live DOM instance per pane. Moving a tab never clones game state. */
 (()=>{
+const ux=document.createElement('link');ux.rel='stylesheet';ux.href='workspace-ux.css';document.body.append(ux);
 const paneNames={sea:'해역',production:'생산 관리',research:'연구',trade:'무역',hierarchy:'대상 목록',inspector:'대상 속성',console:'운영 콘솔',...panels};
 paneNames.nodeinfo='노드 상세 정보';paneNames.research='연구';paneNames.planning='계획';const icons={sea:'⌖',production:'⌁',planning:'◇',research:'▦',trade:'⇄',console:'›_'};
 const panes=new Map();let seq=0,z=30,drag=null,resize=null,clickBlocked=false;
@@ -17,7 +18,7 @@ $('#floatingLayer').innerHTML='';
 const parking=document.createElement('div');parking.id='paneParking';parking.hidden=true;document.body.append(parking);
 const preview=document.createElement('div');preview.id='dockPreview';preview.hidden=true;preview.innerHTML='<span></span>';document.body.append(preview);
 const hint=document.createElement('div');hint.id='dragHint';hint.hidden=true;hint.textContent='가장자리: 분할 도킹 · 탭 영역: 탭 합치기 · 빈 곳: 독립 창';document.body.append(hint);
-document.querySelector('.version b').textContent='29';
+document.querySelector('.version b').textContent='30';
 const selectPreset=document.createElement('select');selectPreset.id='preset';selectPreset.setAttribute('aria-label','기본 배치 선택');
 ['기본','필수','자원','전투','교역','연구','계획','해역'].forEach(name=>selectPreset.add(new Option(name,name)));document.querySelector('header nav').prepend(selectPreset);
 const layoutLabel=document.createElement('span');layoutLabel.className='layout-name';layoutLabel.textContent='배치';selectPreset.before(layoutLabel);
@@ -73,7 +74,7 @@ function reveal(id){
 openPanel=activate;
 function applyPreset(name){if(!['기본','필수','자원','전투','교역','연구','계획','해역'].includes(name))return;preset=name;floats=[];tree=presetTree(name);selectPreset.value=name;render();}
 function dropTarget(x,y,ownFloat){
- const root=$('#workspace').getBoundingClientRect(), edge=30;
+ const root=$('#workspace').getBoundingClientRect(), edge=Math.min(72,Math.max(46,Math.min(root.width,root.height)*.08));
  if(x>=root.left&&x<=root.right&&y>=root.top&&y<=root.bottom){
  let side=x<root.left+edge?'left':x>root.right-edge?'right':y<root.top+edge?'top':y>root.bottom-edge?'bottom':null;
  if(side&&tree)return {root:true,side,rect:root};
@@ -83,7 +84,7 @@ function dropTarget(x,y,ownFloat){
  for(const e of els){const g=e.closest('.dock-group');if(g&&!g.closest('[data-float="'+ownFloat+'"]')){target=g;break;}}
  if(!target)return null;const r=target.getBoundingClientRect();let side='center';
  // A tab header is always a merge target.
- if(y>r.top+35){const nx=(x-r.left)/r.width,ny=(y-r.top)/r.height;if(nx<.22)side='left';else if(nx>.78)side='right';else if(ny<.24)side='top';else if(ny>.76)side='bottom';}
+ if(y>r.top+42){const nx=(x-r.left)/r.width,ny=(y-r.top)/r.height;if(nx<.32)side='left';else if(nx>.68)side='right';else if(ny<.32)side='top';else if(ny>.68)side='bottom';}
  return {id:target.dataset.group,side,rect:r};
 }
 function showPreview(t){preview.hidden=!t;if(!t)return;let {left:x,top:y,width:w,height:h}=t.rect;const side=t.side;if(side==='left')w*=.5;if(side==='right'){x+=w*.5;w*=.5;}if(side==='top')h*=.5;if(side==='bottom'){y+=h*.5;h*=.5;}Object.assign(preview.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px'});preview.firstChild.textContent=side==='center'?'탭으로 합치기':({left:'왼쪽',right:'오른쪽',top:'위쪽',bottom:'아래쪽'}[side])+'에 도킹';}
@@ -104,15 +105,17 @@ document.addEventListener('pointerdown',e=>{
 document.addEventListener('pointermove',e=>{
  if(resize){e.preventDefault();if(resize.kind==='split'){const {n,r}=resize;const size=n.axis==='row'?r.width:r.height;const min=Math.min(.3,(n.axis==='row'?155:85)/size);n.ratio=clamp(n.axis==='row'?(e.clientX-r.left)/r.width:(e.clientY-r.top)/r.height,min,1-min);const el=document.querySelector('[data-split="'+n.id+'"]');el.children[0].style.flex=n.ratio+' 1 0';el.children[2].style.flex=(1-n.ratio)+' 1 0';el.children[1].setAttribute('aria-valuenow',Math.round(n.ratio*100));}
  else{const {f,start:s,edge}=resize,dx=e.clientX-resize.x,dy=e.clientY-resize.y;if(edge.includes('e'))f.w=clamp(s.w+dx,250,innerWidth-s.x);if(edge.includes('s'))f.h=clamp(s.h+dy,160,innerHeight-s.y);if(edge.includes('w')){f.x=clamp(s.x+dx,0,s.x+s.w-250);f.w=s.x+s.w-f.x;}if(edge.includes('n')){f.y=clamp(s.y+dy,54,s.y+s.h-160);f.h=s.y+s.h-f.y;}const el=document.querySelector('[data-float="'+f.id+'"]');Object.assign(el.style,{left:f.x+'px',top:f.y+'px',width:f.w+'px',height:f.h+'px'});}return;}
- if(!drag)return;if(!drag.started&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;
+ if(!drag)return;if(!drag.started&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4)return;
  if(!drag.started){const id=drag.pane;remove(id);drag.f={id:uid(),group:group([id]),x:e.clientX-100,y:e.clientY-16,w:Math.min(640,innerWidth-30),h:Math.min(450,innerHeight-150),z:++z};floats.push(drag.f);drag.started=true;render();hint.hidden=false;clickBlocked=true;}
  e.preventDefault();const f=drag.f;f.x=clamp(e.clientX-100,0,innerWidth-120);f.y=clamp(e.clientY-16,54,innerHeight-45);const el=document.querySelector('[data-float="'+f.id+'"]');el.style.left=f.x+'px';el.style.top=f.y+'px';el.style.pointerEvents='none';drag.target=dropTarget(e.clientX,e.clientY,f.id);showPreview(drag.target);
 },true);
 function finish(cancel=false){const activeResize=resize;resize=null;if(activeResize?.handle.hasPointerCapture(activeResize.pointerId))activeResize.handle.releasePointerCapture(activeResize.pointerId);if(drag?.started){let d=drag;drag=null;if(!cancel&&d.target)dockPane(d.pane,d.target);else render();preview.hidden=true;hint.hidden=true;setTimeout(()=>clickBlocked=false,0);}else drag=null;}
 document.addEventListener('pointerup',()=>finish(),true);document.addEventListener('pointercancel',()=>finish(true),true);document.addEventListener('lostpointercapture',e=>{if(resize?.pointerId===e.pointerId)finish(true);});window.addEventListener('blur',()=>finish(true));
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&drag){finish(true);}const h=e.target.closest?.('[data-splitter]');if(h&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();let n=findGroup(h.dataset.splitter);n.ratio=clamp(n.ratio+(['ArrowRight','ArrowDown'].includes(e.key)?.03:-.03),.15,.85);render();}});
-document.addEventListener('click',e=>{if(clickBlocked)return;const close=e.target.closest('[data-close-pane]');if(close){remove(close.dataset.closePane);render();return;}const tab=e.target.closest('[data-tab]');if(tab){let o=owner(tab.dataset.tab);o.active=tab.dataset.tab;render();}if(e.target.id==='emptyReset')applyPreset('기본');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&drag){finish(true);}if(e.key==='Escape')document.querySelector('.dock-group.workspace-focus')?.classList.remove('workspace-focus');const h=e.target.closest?.('[data-splitter]');if(h&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();let n=findGroup(h.dataset.splitter);n.ratio=clamp(n.ratio+(['ArrowRight','ArrowDown'].includes(e.key)?.03:-.03),.15,.85);render();}});
+document.addEventListener('dblclick',e=>{const tab=e.target.closest('[data-tab]');if(!tab||e.target.closest('[data-close-pane]'))return;const group=tab.closest('.dock-group');document.querySelectorAll('.dock-group.workspace-focus').forEach(el=>{if(el!==group)el.classList.remove('workspace-focus');});group.classList.toggle('workspace-focus');toast(group.classList.contains('workspace-focus')?'집중 보기 · Esc 또는 탭 더블클릭으로 복귀':'전체 작업영역으로 복귀');});
+document.addEventListener('click',e=>{if(clickBlocked)return;const close=e.target.closest('[data-close-pane]');if(close){remove(close.dataset.closePane);render();return;}const tab=e.target.closest('[data-tab]');if(tab){let o=owner(tab.dataset.tab);if(o.active!==tab.dataset.tab){o.active=tab.dataset.tab;render();}}if(e.target.id==='emptyReset')applyPreset('기본');});
 selectPreset.onchange=()=>applyPreset(selectPreset.value);
+const tidy=document.createElement('button');tidy.id='tidyWorkspace';tidy.textContent='배치 정리';tidy.title='현재 선택한 목적별 배치를 다시 적용합니다';selectPreset.after(tidy);tidy.onclick=()=>{applyPreset(selectPreset.value);toast(selectPreset.value+' 배치로 창을 정리했습니다.');};
 panes.get('hierarchy').querySelector('#collapseLeft').onclick=()=>{};
 function snapshot(){return {version:2,tree,floats,preset,note:state.note};}
 function validate(data){
@@ -122,8 +125,10 @@ function validate(data){
 }
 $('#saveLayout').onclick=()=>{try{localStorage.setItem('pelagic-layout-v2',JSON.stringify(snapshot()));toast('도킹·탭·창 크기·메모를 저장했습니다.');}catch{toast('이 환경에서 배치 저장을 사용할 수 없습니다.');}};
 $('#restoreLayout').onclick=()=>{try{const raw=localStorage.getItem('pelagic-layout-v2');if(!raw){toast('저장된 v2 배치가 없습니다.');return;}const d=validate(JSON.parse(raw));tree=d.tree;floats=d.floats;state.note=d.note;const note=panes.get('notes')?.querySelector('textarea');if(note)note.value=state.note||'';preset=d.preset;render();toast('저장한 작업영역을 복원했습니다.');}catch{toast('배치 형식이 올바르지 않아 현재 작업영역을 유지합니다.');}};
-$('#panelPicker').innerHTML=Object.entries(paneNames).map(([k,v])=>'<button data-panel="'+k+'">＋ '+v+'</button>').join('');
-window.Workspace={activate,reveal,applyPreset,panes,ensurePane,render,snapshot,dockPane,groupOwner:owner,paneNames};
+const paneCategories={sea:'해역·관제',seastatus:'해역·관제',facilities:'해역·관제',hierarchy:'해역·관제',inspector:'해역·관제',campaign:'해역·관제',scan:'탐사·계획',planning:'탐사·계획',missions:'탐사·계획',production:'생산·물류',resources:'생산·물류',power:'생산·물류',trade:'생산·물류',people:'생산·물류',research:'연구·전투',fleet:'연구·전투',cores:'연구·전투',console:'보조 도구',notes:'보조 도구',nodeinfo:'보조 도구',admin:'개발 도구'};
+function refreshPicker(){const picker=$('#panelPicker'),query=picker.querySelector('input')?.value||'';const groups={};for(const [id,name]of Object.entries(paneNames)){const category=paneCategories[id]||'기타';(groups[category]??=[]).push([id,name]);}picker.innerHTML='<div class="window-picker-head"><b>창 추가</b><small>필요한 창만 열어 두세요</small><input placeholder="창 이름 검색" aria-label="창 이름 검색" value="'+query.replace(/"/g,'&quot;')+'"></div>'+Object.entries(groups).map(([category,items])=>'<section><h3>'+category+'</h3>'+items.map(([id,name])=>'<button data-panel="'+id+'" data-window-name="'+name.toLowerCase()+'">＋ '+name+'</button>').join('')+'</section>').join('');const input=picker.querySelector('input');input.oninput=()=>{const q=input.value.trim().toLowerCase();picker.querySelectorAll('[data-window-name]').forEach(b=>b.hidden=!!q&&!b.dataset.windowName.includes(q));picker.querySelectorAll('section').forEach(s=>s.hidden=![...s.querySelectorAll('[data-window-name]')].some(b=>!b.hidden));};}
+refreshPicker();
+window.Workspace={activate,reveal,applyPreset,panes,ensurePane,render,snapshot,dockPane,groupOwner:owner,paneNames,refreshPicker};
 let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{floats.forEach(f=>{f.w=clamp(f.w,250,innerWidth-10);f.h=clamp(f.h,160,innerHeight-60);f.x=clamp(f.x,0,innerWidth-f.w);f.y=clamp(f.y,54,innerHeight-f.h);});render();},100);});
 applyPreset('기본');
 })();
